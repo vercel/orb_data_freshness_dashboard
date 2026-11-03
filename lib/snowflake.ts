@@ -1,6 +1,9 @@
+import 'server-only'
+
 import snowflake from 'snowflake-sdk'
 import fs from 'fs'
 import { connection as nextConnection } from 'next/server'
+import { requireDashboardAccess } from '@/lib/auth'
 
 // Suppress verbose SDK logging
 snowflake.configure({ logLevel: 'WARN' })
@@ -66,7 +69,7 @@ function executeAsync(
       sqlText,
       complete: (err, stmt, rows) => {
         if (err) reject(new Error(`Snowflake query error: ${err.message}`))
-        else resolve({ rows: rows || [], columns: stmt.getColumns() })
+        else resolve({ rows: rows || [], columns: stmt.getColumns() || [] })
       },
     })
   })
@@ -103,6 +106,9 @@ function destroyAsync(conn: snowflake.Connection): Promise<void> {
 export async function querySnowflake<T = Record<string, unknown>>(
   sqlText: string,
 ): Promise<T[]> {
+  // Authorize before reading service credentials or opening a connection.
+  await requireDashboardAccess()
+
   // Prevent Next.js from pre-rendering this function.
   // The snowflake token is not available at build time.
   await nextConnection()

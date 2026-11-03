@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { querySnowflake } from "@/lib/snowflake"
+import { getDashboardSession, isAuthConfigured } from "@/lib/auth"
 import {
   Table,
   TableBody,
@@ -9,6 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+
+export const dynamic = "force-dynamic"
 
 interface TableFreshness {
   TABLE_NAME: string
@@ -224,7 +227,22 @@ async function FreshnessTable() {
   )
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await getDashboardSession()
+  if (!session) {
+    return (
+      <main className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-2xl font-semibold text-foreground">Access restricted</h1>
+        <p className="text-muted-foreground">Sign in with an authorized work account to continue.</p>
+        {isAuthConfigured() && (
+          <a className="underline text-foreground" href="/api/auth/signin?callbackUrl=%2F">
+            Sign in
+          </a>
+        )}
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-6 py-16">
